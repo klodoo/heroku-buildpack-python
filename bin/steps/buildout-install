@@ -1,0 +1,74 @@
+[ ! "$FRESH_PYTHON" ] && bpwatch start buildout_install
+[ "$FRESH_PYTHON" ] && bpwatch start buildout_install_first
+
+
+WORKDIR=${WORKDIR:="/app"}
+BUILDOUT_FILE=${BUILDOUT_FILE:="buildout.cfg"}
+BUILDOUT_OPTIONS=${BUILDOUT_OPTIONS:="openerp:options.xmlrpc-port=5000"}
+PROCFILE=${PROCFILE:="web: python bin/start_openerp --xmlrpc-port=5000 --db_host=\"\$DATABASE_HOST\" -w \"\$DATABASE_PWD\" -r \"\$DATABASE_USER\" --db_port=\"\$DATABASE_PORT\" --unaccent"}
+
+if [[ -d "/app/.apt/usr" ]]; then
+  export PATH="$HOME/.apt/usr/bin:$PATH"
+  export PYTHONPATH="$PYTHONPATH:$( echo $HOME/.apt/usr/lib/python*/dist-packages | tr ' ' ':' )"
+fi
+
+if [ ! -f bin/buildout ]; then
+  if [ ! -f bootstrap.py ]; then
+    puts-step "bootstrapping..."
+    wget https://raw.githubusercontent.com/buildout/buildout/813a4590507b625b8f226edf94445a31042e243d/bootstrap/bootstrap.py | cleanup | indent
+    pip install --user --upgrade setuptools | cleanup | indent
+    export PATH="$HOME/.local/bin:$PATH"
+    export PYTHONPATH="$( echo $HOME/.local/lib/python*/site-packages | tr ' ' ':' ):$PYTHONPATH"
+  fi
+  puts-step "generating project skeleton..."
+  python bootstrap.py --allow-site-packages  | cleanup | indent
+fi
+
+puts-step "converging dependencies..."
+python bin/buildout "$BUILDOUT_OPTIONS" "-c" "$BUILDOUT_FILE" | cleanup | indent
+ls /app/parts
+
+# NOTE see https://lists.launchpad.net/openerp-community/msg06631.html
+#      and https://lists.launchpad.net/openerp-community/msg06635.html
+cd parts
+PATCH_DIR="$BUILD_DIR/patches"
+pwd
+for d in */ ; do
+  puts-step "scanning patches for parts/$p with suffix $PATCH_DIR/$p possibly numbered from 0 to 4..."
+  # TODO test if some part patch diff in last commit. If not do modulesdiff here before patching!
+  p=$(echo "$d" | sed 's/\/$//')
+  [ -f "$PATCH_DIR/$p"0 ] && cd $d && patch -p1 < "$PATCH_DIR/$p"0 && cd ..
+  [ -f "$PATCH_DIR/$p" ]  && cd $d && patch -p1 < "$PATCH_DIR/$p"  && cd ..
+  [ -f "$PATCH_DIR/$p"1 ] && cd $d && patch -p1 < "$PATCH_DIR/$p"1 && cd ..
+  [ -f "$PATCH_DIR/$p"2 ] && cd $d && patch -p1 < "$PATCH_DIR/$p"2 && cd ..
+  [ -f "$PATCH_DIR/$p"3 ] && cd $d && patch -p1 < "$PATCH_DIR/$p"3 && cd ..
+  [ -f "$PATCH_DIR/$p"4 ] && cd $d && patch -p1 < "$PATCH_DIR/$p"4 && cd ..
+done
+cd $BUILD_DIR
+
+
+cat <<EOF > bin/start
+#!/usr/bin/env bash
+set -e
+
+DATABASE_USER=\$(echo \$DATABASE_URL | tr ":" "\n" | tr "/" "\n" | tr "@" "\n" | sed -n '4p')
+DATABASE_PWD=\$(echo \$DATABASE_URL | tr ":" "\n" | tr "/" "\n" | tr "@" "\n" | sed -n '5p')
+DATABASE_HOST=\$(echo \$DATABASE_URL | tr ":" "\n" | tr "/" "\n" | tr "@" "\n" | sed -n '6p')
+DATABASE_PORT=\$(echo \$DATABASE_URL | tr ":" "\n" | tr "/" "\n" | tr "@" "\n" | sed -n '7p')
+PORT=\$PORT || 5000
+
+if [ ! -z \$DBS ]; then
+  DATABASE=\$DBS
+else
+  DATABASE=\$(echo \$DATABASE_URL | tr ":" "\n" | tr "/" "\n" | tr "@" "\n" | sed -n '8p')
+fi
+
+/app/bin/start_openerp --xmlrpc-port="\$PORT" --db_host="\$DATABASE_HOST" -w "\$DATABASE_PWD" -r "\$DATABASE_USER" --db_port="\$DATABASE_PORT" -d "\$DATABASE" --unaccent
+EOF
+
+echo "web: sh bin/start" > Procfile
+
+[ ! "$FRESH_PYTHON" ] && bpwatch stop buildout_install
+[ "$FRESH_PYTHON" ] && bpwatch stop buildout_install_first
+
+echo
