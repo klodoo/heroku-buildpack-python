@@ -1,6 +1,7 @@
 [ ! "$FRESH_PYTHON" ] && bpwatch start buildout_install
 [ "$FRESH_PYTHON" ] && bpwatch start buildout_install_first
 
+set -eo pipefail
 
 WORKDIR=${WORKDIR:="/app"}
 BUILDOUT_FILE=${BUILDOUT_FILE:="buildout.cfg"}
