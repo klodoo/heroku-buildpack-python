@@ -12,15 +12,17 @@ if [[ -d "/app/.apt/usr" ]]; then
   export PYTHONPATH="$PYTHONPATH:$( echo $HOME/.apt/usr/lib/python*/dist-packages | tr ' ' ':' )"
 fi
 
+pip install --user --upgrade setuptools | cleanup | indent # TODO option to avoid that like $OFFILINE
+
 if [ ! -f bin/buildout ]; then
   if [ ! -f bootstrap.py ]; then
     puts-step "bootstrapping..."
     wget https://raw.githubusercontent.com/buildout/buildout/813a4590507b625b8f226edf94445a31042e243d/bootstrap/bootstrap.py | cleanup | indent
-    pip install --user --upgrade setuptools | cleanup | indent
-    export PATH="$HOME/.local/bin:$PATH"
-    export PYTHONPATH="$( echo $HOME/.local/lib/python*/site-packages | tr ' ' ':' ):$PYTHONPATH"
   fi
+
   puts-step "generating project skeleton..."
+  export PATH="$HOME/.local/bin:$PATH"
+  export PYTHONPATH="$( echo $HOME/.local/lib/python*/site-packages | tr ' ' ':' ):$PYTHONPATH"
   python bootstrap.py --allow-site-packages  | cleanup | indent
 fi
 
