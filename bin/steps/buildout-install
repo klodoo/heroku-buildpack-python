@@ -13,7 +13,7 @@ if [[ -d "/app/.apt/usr" ]]; then
   export PYTHONPATH="$PYTHONPATH:$( echo $HOME/.apt/usr/lib/python*/dist-packages | tr ' ' ':' )"
 fi
 
-pip install --user --upgrade setuptools | cleanup | indent # TODO option to avoid that like $OFFILINE
+easy_install -U --install-dir=$CACHE_DIR/eggs setuptools | cleanup | indent # TODO OFFILINE option
 
 if [ ! -f bin/buildout ]; then
   if [ ! -f bootstrap.py ]; then
