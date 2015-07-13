@@ -13,6 +13,7 @@ if [[ -d "/app/.apt/usr" ]]; then
   export PYTHONPATH="$PYTHONPATH:$( echo $HOME/.apt/usr/lib/python*/dist-packages | tr ' ' ':' )"
 fi
 
+export PYTHONPATH="$PYTHONPATH:$CACHE_DIR/eggs"
 easy_install -U --install-dir=$CACHE_DIR/eggs setuptools | cleanup | indent # TODO OFFILINE option
 
 if [ ! -f bin/buildout ]; then
