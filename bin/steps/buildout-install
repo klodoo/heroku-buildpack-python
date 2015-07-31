@@ -67,7 +67,7 @@ else
   DATABASE=\$(echo \$DATABASE_URL | tr ":" "\n" | tr "/" "\n" | tr "@" "\n" | sed -n '8p')
 fi
 
-/app/bin/start_openerp --xmlrpc-port="\$PORT" --db_host="\$DATABASE_HOST" -w "\$DATABASE_PWD" -r "\$DATABASE_USER" --db_port="\$DATABASE_PORT" -d "\$DATABASE" --unaccent
+/app/bin/start_openerp --xmlrpc-port="\$PORT" --db_host="\$DATABASE_HOST" -w "\$DATABASE_PWD" -r "\$DATABASE_USER" --db_port="\$DATABASE_PORT" -d "\$DATABASE" --unaccent "$@"
 EOF
 
 echo "web: sh bin/start" > Procfile
