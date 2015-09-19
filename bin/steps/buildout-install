@@ -70,7 +70,7 @@ fi
 /app/bin/start_openerp --xmlrpc-port="\$PORT" --db_host="\$DATABASE_HOST" -w "\$DATABASE_PWD" -r "\$DATABASE_USER" --db_port="\$DATABASE_PORT" -d "\$DATABASE" --unaccent "\$@"
 EOF
 
-echo "web: sh bin/start" > Procfile
+[ ! -f Procfile ] && echo "web: sh bin/start" > Procfile
 
 [ ! "$FRESH_PYTHON" ] && bpwatch stop buildout_install
 [ "$FRESH_PYTHON" ] && bpwatch stop buildout_install_first
